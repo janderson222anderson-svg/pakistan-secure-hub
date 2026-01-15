@@ -1,0 +1,208 @@
+import { useState, useRef, useEffect, useCallback } from "react";
+import maplibregl from "maplibre-gl";
+import type { RoutePoint, RouteInfo, TravelMode } from "../types";
+import { useRouteAlternatives } from "./useRouteAlternatives";
+
+interface UseRoutingProps {
+  map: maplibregl.Map | null;
+  travelMode: TravelMode;
+}
+
+export const useRouting = ({ map, travelMode }: UseRoutingProps) => {
+  const [startPoint, setStartPoint] = useState<RoutePoint | null>(null);
+  const [endPoint, setEndPoint] = useState<RoutePoint | null>(null);
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [selectingPoint, setSelectingPoint] = useState<"start" | "end" | null>(null);
+  
+  const startMarker = useRef<maplibregl.Marker | null>(null);
+  const endMarker = useRef<maplibregl.Marker | null>(null);
+
+  // Use route alternatives hook
+  const {
+    alternatives,
+    selectedAlternative,
+    isCalculating: isCalculatingRoute,
+    calculateAlternatives,
+    selectAlternative,
+  } = useRouteAlternatives({ travelMode });
+
+  // Draw route on map
+  const drawRoute = useCallback((geometry: GeoJSON.LineString) => {
+    if (!map) return;
+
+    // Remove existing route
+    if (map.getSource("route")) {
+      if (map.getLayer("route-line")) map.removeLayer("route-line");
+      if (map.getLayer("route-line-outline")) map.removeLayer("route-line-outline");
+      map.removeSource("route");
+    }
+
+    // Add route source and layers
+    map.addSource("route", {
+      type: "geojson",
+      data: {
+        type: "Feature",
+        properties: {},
+        geometry,
+      },
+    });
+
+    map.addLayer({
+      id: "route-line-outline",
+      type: "line",
+      source: "route",
+      layout: {
+        "line-join": "round",
+        "line-cap": "round",
+      },
+      paint: {
+        "line-color": "#1e40af",
+        "line-width": 8,
+        "line-opacity": 0.5,
+      },
+    });
+
+    map.addLayer({
+      id: "route-line",
+      type: "line",
+      source: "route",
+      layout: {
+        "line-join": "round",
+        "line-cap": "round",
+      },
+      paint: {
+        "line-color": "#3b82f6",
+        "line-width": 5,
+      },
+    });
+  }, [map]);
+
+  // Calculate route when both points are set
+  useEffect(() => {
+    const calculateRoute = async () => {
+      if (!startPoint || !endPoint || !map) return;
+
+      const route = await calculateAlternatives(startPoint, endPoint);
+      
+      if (route) {
+        setRouteInfo(route);
+        drawRoute(route.geometry);
+
+        // Fit map to route
+        const coordinates = route.geometry.coordinates as [number, number][];
+        const bounds = coordinates.reduce(
+          (bounds, coord) => bounds.extend(coord as maplibregl.LngLatLike),
+          new maplibregl.LngLatBounds(coordinates[0], coordinates[0])
+        );
+        map.fitBounds(bounds, { padding: 80, duration: 1000 });
+      }
+    };
+
+    if (startPoint && endPoint && map) {
+      calculateRoute();
+    }
+  }, [startPoint, endPoint, map, calculateAlternatives, drawRoute]);
+
+  // Handle alternative route selection
+  const handleSelectAlternative = useCallback((index: number) => {
+    const route = selectAlternative(index);
+    if (route && map) {
+      setRouteInfo(route);
+      drawRoute(route.geometry);
+
+      // Fit map to route
+      const coordinates = route.geometry.coordinates as [number, number][];
+      const bounds = coordinates.reduce(
+        (bounds, coord) => bounds.extend(coord as maplibregl.LngLatLike),
+        new maplibregl.LngLatBounds(coordinates[0], coordinates[0])
+      );
+      map.fitBounds(bounds, { padding: 80, duration: 1000 });
+    }
+  }, [selectAlternative, map, drawRoute]);
+
+  // Update markers when points change
+  useEffect(() => {
+    if (!map) return;
+
+    // Update start marker
+    if (startPoint) {
+      if (startMarker.current) {
+        startMarker.current.setLngLat(startPoint.lngLat);
+      } else {
+        const el = document.createElement("div");
+        el.innerHTML = `
+          <div class="relative">
+            <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+              <span class="text-white text-sm font-bold">A</span>
+            </div>
+            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-emerald-500 rotate-45"></div>
+          </div>
+        `;
+        startMarker.current = new maplibregl.Marker({ element: el, anchor: "bottom" })
+          .setLngLat(startPoint.lngLat)
+          .addTo(map);
+      }
+    } else if (startMarker.current) {
+      startMarker.current.remove();
+      startMarker.current = null;
+    }
+
+    // Update end marker
+    if (endPoint) {
+      if (endMarker.current) {
+        endMarker.current.setLngLat(endPoint.lngLat);
+      } else {
+        const el = document.createElement("div");
+        el.innerHTML = `
+          <div class="relative">
+            <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+              <span class="text-white text-sm font-bold">B</span>
+            </div>
+            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-red-500 rotate-45"></div>
+          </div>
+        `;
+        endMarker.current = new maplibregl.Marker({ element: el, anchor: "bottom" })
+          .setLngLat(endPoint.lngLat)
+          .addTo(map);
+      }
+    } else if (endMarker.current) {
+      endMarker.current.remove();
+      endMarker.current = null;
+    }
+  }, [startPoint, endPoint, map]);
+
+  const clearRoute = useCallback(() => {
+    if (map) {
+      if (map.getSource("route")) {
+        if (map.getLayer("route-line")) map.removeLayer("route-line");
+        if (map.getLayer("route-line-outline")) map.removeLayer("route-line-outline");
+        map.removeSource("route");
+      }
+    }
+    
+    startMarker.current?.remove();
+    startMarker.current = null;
+    endMarker.current?.remove();
+    endMarker.current = null;
+    
+    setStartPoint(null);
+    setEndPoint(null);
+    setRouteInfo(null);
+    setSelectingPoint("start");
+  }, [map]);
+
+  return {
+    startPoint,
+    endPoint,
+    routeInfo,
+    isCalculatingRoute,
+    selectingPoint,
+    alternatives,
+    selectedAlternative,
+    setStartPoint,
+    setEndPoint,
+    setSelectingPoint,
+    clearRoute,
+    handleSelectAlternative,
+  };
+};
