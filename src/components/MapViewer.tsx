@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { motion } from "framer-motion";
 import { Crosshair, Search, Route, TrendingUp, CloudSun, MapPin } from "lucide-react";
 import { toast, Toaster } from "sonner";
 
@@ -513,65 +512,41 @@ const MapViewer = () => {
   };
 
   return (
-    <section className="py-20 bg-secondary" id="map-demo">
+    <div className="h-screen w-screen relative">
       <Toaster position="top-center" richColors />
-      <div className="container mx-auto px-6">
-        {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <span className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-            Live Map Platform
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-secondary-foreground mb-4">
-            Interactive Map with Navigation
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Real-time routing with distance and ETA calculation. Click the route button, 
-            select start and end points, and get instant navigation.
-          </p>
-        </motion.div>
-
-        {/* Map Container */}
-        <motion.div
-          ref={mapContainerWrapper}
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="relative rounded-2xl overflow-hidden shadow-2xl border border-border bg-card max-w-6xl mx-auto"
-        >
-          {/* Map Header Bar */}
-          <div className="flex items-center justify-between px-4 py-3 bg-navy-deep border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-destructive" />
-                <div className="w-3 h-3 rounded-full bg-gold" />
-                <div className="w-3 h-3 rounded-full bg-primary" />
-              </div>
-              <span className="text-white/80 text-sm font-medium">NPMI Navigator v2.0</span>
+      
+      {/* Map Container */}
+      <div
+        ref={mapContainerWrapper}
+        className="relative h-full w-full bg-card"
+      >
+        {/* Map Header Bar */}
+        <div className="flex items-center justify-between px-4 py-3 bg-navy-deep border-b border-white/10 relative z-50">
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-destructive" />
+              <div className="w-3 h-3 rounded-full bg-gold" />
+              <div className="w-3 h-3 rounded-full bg-primary" />
             </div>
-            <div className="flex items-center gap-4">
-              {isRoutingMode && (
-                <span className="text-xs text-primary bg-primary/20 px-2 py-1 rounded-full">
-                  Routing Mode
-                </span>
-              )}
-              <span className="text-xs text-white/50 hidden sm:block">
-                Zoom: {zoom.toFixed(1)}x
-              </span>
-              <Crosshair className="w-4 h-4 text-white/50" />
-            </div>
+            <span className="text-white/80 text-sm font-medium">NPMI Navigator v2.0</span>
           </div>
+          <div className="flex items-center gap-4">
+            {isRoutingMode && (
+              <span className="text-xs text-primary bg-primary/20 px-2 py-1 rounded-full">
+                Routing Mode
+              </span>
+            )}
+            <span className="text-xs text-white/50 hidden sm:block">
+              Zoom: {zoom.toFixed(1)}x
+            </span>
+            <Crosshair className="w-4 h-4 text-white/50" />
+          </div>
+        </div>
 
-          {/* Map Content */}
-          <div className="relative h-[600px]">
-            {/* MapLibre Map */}
-            <div ref={mapContainer} className="absolute inset-0" />
+        {/* Map Content */}
+        <div className="relative h-[calc(100vh-120px)]">
+          {/* MapLibre Map */}
+          <div ref={mapContainer} className="absolute inset-0" />
 
             {/* Search Bar */}
             <SearchBar
@@ -724,88 +699,41 @@ const MapViewer = () => {
           </div>
 
           {/* Map Footer */}
-          <div className="px-4 py-2 bg-muted/50 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+          <div className="px-4 py-2 bg-muted/50 border-t border-border flex items-center justify-between text-xs text-muted-foreground relative z-50">
             <span>© OpenStreetMap contributors | CARTO Basemaps | OSRM Routing</span>
             <span>Powered by MapLibre GL JS</span>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Instructions */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
-          className="mt-8 text-center"
-        >
-          <div className="inline-flex flex-wrap items-center justify-center gap-3 px-6 py-3 rounded-xl bg-card border border-border">
-            <div className="flex items-center gap-2">
-              <Search className="w-5 h-5 text-primary" />
-              <span className="text-sm text-muted-foreground">
-                <strong className="text-foreground">Search</strong>
-              </span>
-            </div>
-            <span className="text-muted-foreground hidden sm:inline">•</span>
-            <div className="flex items-center gap-2">
-              <Route className="w-5 h-5 text-primary" />
-              <span className="text-sm text-muted-foreground">
-                <strong className="text-foreground">Route</strong>
-              </span>
-            </div>
-            <span className="text-muted-foreground hidden sm:inline">•</span>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-emerald-500" />
-              <span className="text-sm text-muted-foreground">
-                <strong className="text-foreground">Elevation</strong>
-              </span>
-            </div>
-            <span className="text-muted-foreground hidden sm:inline">•</span>
-            <div className="flex items-center gap-2">
-              <CloudSun className="w-5 h-5 text-sky-500" />
-              <span className="text-sm text-muted-foreground">
-                <strong className="text-foreground">Weather</strong>
-              </span>
-            </div>
-            <span className="text-muted-foreground hidden sm:inline">•</span>
-            <div className="flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-purple-500" />
-              <span className="text-sm text-muted-foreground">
-                <strong className="text-foreground">POIs</strong>
-              </span>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Custom styles */}
-      <style>{`
-        .city-marker .animate-ping {
-          animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-        }
-        @keyframes ping {
-          75%, 100% {
-            transform: scale(2);
-            opacity: 0;
+        {/* Custom styles */}
+        <style>{`
+          .city-marker .animate-ping {
+            animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
           }
-        }
-        .maplibregl-ctrl-logo {
-          display: none !important;
-        }
-        *:fullscreen {
-          width: 100vw !important;
-          height: 100vh !important;
-          max-width: 100vw !important;
-          border-radius: 0 !important;
-          display: flex !important;
-          flex-direction: column !important;
-        }
-        *:fullscreen > div:nth-child(2) {
-          flex: 1 !important;
-          height: auto !important;
-        }
-      `}</style>
-    </section>
-  );
-};
+          @keyframes ping {
+            75%, 100% {
+              transform: scale(2);
+              opacity: 0;
+            }
+          }
+          .maplibregl-ctrl-logo {
+            display: none !important;
+          }
+          *:fullscreen {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            border-radius: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+          }
+          *:fullscreen > div:nth-child(2) {
+            flex: 1 !important;
+            height: auto !important;
+          }
+        `}</style>
+      </div>
+    );
+  };
 
-export default MapViewer;
+  export default MapViewer;

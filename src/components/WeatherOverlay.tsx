@@ -77,16 +77,18 @@ const WeatherOverlay = ({
     >
       <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-sky-500 to-blue-600">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-green-600">
           <div className="flex items-center gap-2">
             <Cloud className="w-5 h-5 text-white" />
             <span className="font-semibold text-white">Weather Along Route</span>
           </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-white/20 rounded-lg transition-colors group"
+            title="Close"
+            aria-label="Close weather overlay"
           >
-            <X className="w-4 h-4 text-white" />
+            <X className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
           </button>
         </div>
 
