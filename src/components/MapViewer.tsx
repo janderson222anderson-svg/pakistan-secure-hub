@@ -861,7 +861,7 @@ const MapViewer = () => {
                   onToggleRouting={handleToggleRouting}
                   onLocateUser={handleLocateUser}
                   onTogglePOI={() => setShowPOIPanel(!showPOIPanel)}
-                  onToggleMeasure={toggleMeasureMode}
+                  onToggleMeasure={() => toggleMeasureMode("distance")}
                   onToggleLayerPanel={() => setShowLayerPanel(!showLayerPanel)}
                   onToggleTraffic={handleToggleTraffic}
                 />
@@ -885,7 +885,7 @@ const MapViewer = () => {
                 onResetView={handleResetView}
                 onToggleTraffic={handleToggleTraffic}
                 onTogglePOI={() => setShowPOIPanel(!showPOIPanel)}
-                onToggleMeasure={toggleMeasureMode}
+                onToggleMeasure={() => toggleMeasureMode("distance")}
                 onToggleLayerPanel={() => setShowLayerPanel(!showLayerPanel)}
               />
             )}
@@ -1046,7 +1046,6 @@ const MapViewer = () => {
           </div>
         </div>
 
-<<<<<<< HEAD
         {/* Instructions - Responsive */}
         <motion.div
           initial={{ opacity: 0 }}
