@@ -137,6 +137,16 @@ const SearchBar = ({ isRoutingMode, selectingPoint, onSelectResult }: SearchBarP
               exit={{ opacity: 0, y: -10 }}
               className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 overflow-hidden"
             >
+              <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
+                <span className="text-xs font-medium text-gray-600">Searching...</span>
+                <button
+                  onClick={() => setShowSearchResults(false)}
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Close"
+                >
+                  <X className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
               <LoadingSkeleton type="search" />
             </motion.div>
           )}
@@ -148,6 +158,20 @@ const SearchBar = ({ isRoutingMode, selectingPoint, onSelectResult }: SearchBarP
               exit={{ opacity: 0, y: -10 }}
               className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 overflow-hidden max-h-80 overflow-y-auto"
             >
+              <div className="sticky top-0 z-10 flex items-center justify-between px-3 py-2 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+                <span className="text-xs font-medium text-gray-600">{searchResults.length} results</span>
+                <button
+                  onClick={() => {
+                    setShowSearchResults(false);
+                    setSearchQuery("");
+                    setSearchResults([]);
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Close"
+                >
+                  <X className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
               {searchResults.map((result) => {
                 const PlaceIcon = getPlaceIcon(result.type, result.class);
                 return (
@@ -193,11 +217,26 @@ const SearchBar = ({ isRoutingMode, selectingPoint, onSelectResult }: SearchBarP
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 p-4 text-center"
+              className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 overflow-hidden"
             >
-              <MapPinned className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No places found for "{searchQuery}"</p>
-              <p className="text-xs text-gray-400 mt-1">Try a different search term</p>
+              <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
+                <span className="text-xs font-medium text-gray-600">No results</span>
+                <button
+                  onClick={() => {
+                    setShowSearchResults(false);
+                    setSearchQuery("");
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Close"
+                >
+                  <X className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
+              <div className="p-4 text-center">
+                <MapPinned className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">No places found for "{searchQuery}"</p>
+                <p className="text-xs text-gray-400 mt-1">Try a different search term</p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

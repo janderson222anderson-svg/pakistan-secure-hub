@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { motion } from "framer-motion";
-import { Crosshair, Search, Route, TrendingUp, CloudSun, MapPin, Loader2 } from "lucide-react";
+import { Crosshair, Loader2, FileText } from "lucide-react";
 import { toast, Toaster } from "sonner";
 
 // Import components
@@ -40,7 +40,7 @@ import { mapStyles } from "./map/constants";
 import { formatDistance } from "./map/utils";
 import { Z_INDEX } from "../lib/z-index";
 
-const MapViewer = () => {
+const FullScreenMapViewer = ({ showDocsButton = false, onDocsClick }: { showDocsButton?: boolean; onDocsClick?: () => void }) => {
   // Mobile detection
   const isMobile = useIsMobile();
   
@@ -667,435 +667,338 @@ const MapViewer = () => {
   };
 
   return (
-    <section className="py-20 bg-secondary" id="map-demo">
+    <div className="h-screen w-full relative bg-gray-900">
       <Toaster position="top-center" richColors />
-      <div className="container mx-auto px-6">
-        {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <span className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-            Live Map Platform
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-secondary-foreground mb-4">
-            Interactive Map with Navigation
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Real-time routing with distance and ETA calculation. Click the route button, 
-            select start and end points, and get instant navigation.
-          </p>
-        </motion.div>
+      
+      {/* Full Screen Map Container */}
+      <div
+        ref={mapContainerWrapper}
+        className="h-full w-full relative overflow-hidden"
+      >
+        {/* MapLibre Map */}
+        <div ref={mapContainer} className="absolute inset-0" />
 
-        {/* Map Container */}
-        <motion.div
-          ref={mapContainerWrapper}
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="relative rounded-2xl overflow-hidden shadow-2xl border border-border bg-card max-w-6xl mx-auto"
-        >
-          {/* Map Header Bar */}
-          <div className="flex items-center justify-between px-4 py-3 bg-navy-deep border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-destructive" />
-                <div className="w-3 h-3 rounded-full bg-gold" />
-                <div className="w-3 h-3 rounded-full bg-primary" />
-              </div>
-              <span className="text-white/80 text-sm font-medium">NPMI Navigator v2.0</span>
-            </div>
-            <div className="flex items-center gap-4">
-              {isRoutingMode && (
-                <span className="text-xs text-primary bg-primary/20 px-2 py-1 rounded-full">
-                  Routing Mode
-                </span>
+        {/* Docs Button - Only show when requested and on desktop */}
+        {showDocsButton && onDocsClick && !isMobile && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onDocsClick}
+            className="absolute top-4 left-4 bg-primary text-white px-3 py-2 rounded-lg shadow-lg hover:bg-primary/90 transition-colors flex items-center gap-2 font-medium text-sm"
+            style={{ zIndex: Z_INDEX.DOCS_BUTTON }}
+          >
+            <FileText className="w-4 h-4" />
+            <span className="hidden sm:inline">Docs</span>
+          </motion.button>
+        )}
+
+        {/* Search Bar - Responsive */}
+        {isMobile ? (
+          <MobileSearchBar
+            isRoutingMode={isRoutingMode}
+            selectingPoint={selectingPoint}
+            onSelectResult={handleSelectSearchResult}
+          />
+        ) : (
+          <SearchBar
+            isRoutingMode={isRoutingMode}
+            selectingPoint={selectingPoint}
+            onSelectResult={handleSelectSearchResult}
+          />
+        )}
+
+        {/* Routing Panel - Responsive */}
+        {isMobile ? (
+          <MobileRoutingPanel
+            show={isRoutingMode}
+            travelMode={travelMode}
+            startPoint={startPoint}
+            endPoint={endPoint}
+            selectingPoint={selectingPoint}
+            routeInfo={routeInfo}
+            isCalculatingRoute={isCalculatingRoute}
+            voiceEnabled={voiceEnabled}
+            showSteps={showSteps}
+            currentStepIndex={currentStepIndex}
+            isLoadingElevation={isLoadingElevation}
+            showElevationProfile={showElevationProfile}
+            isLoadingWeather={isLoadingWeather}
+            showWeatherOverlay={showWeatherOverlay}
+            alternatives={alternatives}
+            selectedAlternative={selectedAlternative}
+            onClose={handleToggleRouting}
+            onTravelModeChange={setTravelMode}
+            onSetStartPoint={() => setSelectingPoint("start")}
+            onSetEndPoint={() => setSelectingPoint("end")}
+            onClearStartPoint={() => {
+              setStartPoint(null);
+              setSelectingPoint("start");
+            }}
+            onClearEndPoint={() => {
+              setEndPoint(null);
+              setSelectingPoint("end");
+            }}
+            onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
+            onToggleSteps={() => setShowSteps(!showSteps)}
+            onGoToStep={handleGoToStep}
+            onClearRoute={() => {
+              clearRoute();
+              setSelectingPoint("start");
+            }}
+            onToggleElevation={handleToggleElevation}
+            onToggleWeather={handleToggleWeather}
+            onSelectAlternative={handleSelectAlternative}
+            onSaveRoute={handleSaveRoute}
+            onLoadRoute={handleLoadRoute}
+          />
+        ) : (
+          <RoutingPanel
+            show={isRoutingMode}
+            travelMode={travelMode}
+            startPoint={startPoint}
+            endPoint={endPoint}
+            selectingPoint={selectingPoint}
+            routeInfo={routeInfo}
+            isCalculatingRoute={isCalculatingRoute}
+            voiceEnabled={voiceEnabled}
+            showSteps={showSteps}
+            currentStepIndex={currentStepIndex}
+            isLoadingElevation={isLoadingElevation}
+            showElevationProfile={showElevationProfile}
+            isLoadingWeather={isLoadingWeather}
+            showWeatherOverlay={showWeatherOverlay}
+            alternatives={alternatives}
+            selectedAlternative={selectedAlternative}
+            onClose={handleToggleRouting}
+            onTravelModeChange={setTravelMode}
+            onSetStartPoint={() => setSelectingPoint("start")}
+            onSetEndPoint={() => setSelectingPoint("end")}
+            onClearStartPoint={() => {
+              setStartPoint(null);
+              setSelectingPoint("start");
+            }}
+            onClearEndPoint={() => {
+              setEndPoint(null);
+              setSelectingPoint("end");
+            }}
+            onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
+            onToggleSteps={() => setShowSteps(!showSteps)}
+            onGoToStep={handleGoToStep}
+            onClearRoute={() => {
+              clearRoute();
+              setSelectingPoint("start");
+            }}
+            onToggleElevation={handleToggleElevation}
+            onToggleWeather={handleToggleWeather}
+            onSelectAlternative={handleSelectAlternative}
+            onSaveRoute={handleSaveRoute}
+            onLoadRoute={handleLoadRoute}
+          />
+        )}
+
+        {/* Map Controls - Responsive */}
+        {isMobile ? (
+          <MobileMapControls
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onFullscreen={handleFullscreen}
+            onResetNorth={handleResetNorth}
+            onResetView={handleResetView}
+            onToggleMenu={() => setShowMobileMenu(!showMobileMenu)}
+            showMenu={showMobileMenu}
+          />
+        ) : (
+          <MapControls
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onFullscreen={handleFullscreen}
+            onResetNorth={handleResetNorth}
+          />
+        )}
+
+        {/* Navigation Controls - Responsive */}
+        {isMobile ? (
+          !isRoutingMode && (
+            <MobileNavigationControls
+              isRoutingMode={isRoutingMode}
+              isLocating={isLocating}
+              showPOIPanel={showPOIPanel}
+              isLoadingPOIs={isLoadingPOIs}
+              measureMode={measureMode}
+              showLayerPanel={showLayerPanel}
+              showTrafficLayer={showTrafficLayer}
+              trafficLoading={trafficLoading}
+              showDocsButton={showDocsButton}
+              onToggleRouting={handleToggleRouting}
+              onLocateUser={handleLocateUser}
+              onTogglePOI={() => setShowPOIPanel(!showPOIPanel)}
+              onToggleMeasure={() => toggleMeasureMode("distance")}
+              onToggleLayerPanel={() => setShowLayerPanel(!showLayerPanel)}
+              onToggleTraffic={handleToggleTraffic}
+              onDocsClick={onDocsClick}
+            />
+          )
+        ) : (
+          <NavigationControls
+            isRoutingMode={isRoutingMode}
+            isTracking={isTracking}
+            isFollowMode={isFollowMode}
+            isLocating={isLocating}
+            showTrafficLayer={showTrafficLayer}
+            trafficLoading={trafficLoading}
+            showPOIPanel={showPOIPanel}
+            isLoadingPOIs={isLoadingPOIs}
+            measureMode={measureMode}
+            showLayerPanel={showLayerPanel}
+            onToggleRouting={handleToggleRouting}
+            onToggleTracking={() => setIsTracking(!isTracking)}
+            onToggleFollowMode={() => setIsFollowMode(!isFollowMode)}
+            onLocateUser={handleLocateUser}
+            onResetView={handleResetView}
+            onToggleTraffic={handleToggleTraffic}
+            onTogglePOI={() => setShowPOIPanel(!showPOIPanel)}
+            onToggleMeasure={() => toggleMeasureMode("distance")}
+            onToggleLayerPanel={() => setShowLayerPanel(!showLayerPanel)}
+          />
+        )}
+
+        {/* Mobile Floating Action Button for Routing Mode */}
+        {isMobile && isRoutingMode && (
+          <div className="absolute top-1/2 right-4 flex flex-col gap-2" style={{ zIndex: Z_INDEX.FLOATING_BUTTONS }}>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={handleLocateUser}
+              disabled={isLocating}
+              className="w-12 h-12 bg-white/95 backdrop-blur-sm rounded-full shadow-lg border border-gray-200 flex items-center justify-center text-gray-700 hover:text-primary transition-colors disabled:opacity-50"
+              aria-label="Find my location"
+            >
+              {isLocating ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Crosshair className="w-5 h-5" />
               )}
-              <span className="text-xs text-white/50 hidden sm:block">
-                Zoom: {zoom.toFixed(1)}x
-              </span>
-              <Crosshair className="w-4 h-4 text-white/50" />
+            </motion.button>
+          </div>
+        )}
+
+        {/* Layer Panel - Responsive */}
+        {isMobile ? (
+          <MobileLayerPanel
+            show={showLayerPanel}
+            activeStyle={activeStyle}
+            onClose={() => setShowLayerPanel(false)}
+            onStyleChange={handleStyleChange}
+          />
+        ) : (
+          <LayerPanel
+            show={showLayerPanel}
+            activeStyle={activeStyle}
+            onClose={() => setShowLayerPanel(false)}
+            onStyleChange={handleStyleChange}
+          />
+        )}
+
+        {/* POI Panel - Responsive */}
+        {isMobile ? (
+          <MobilePOIPanel
+            show={showPOIPanel}
+            activePOICategories={activePOICategories}
+            poisCount={pois.length}
+            onClose={() => setShowPOIPanel(false)}
+            onToggleCategory={togglePOICategory}
+            onClearAll={clearAllPOIs}
+          />
+        ) : (
+          <POIPanel
+            show={showPOIPanel}
+            activePOICategories={activePOICategories}
+            poisCount={pois.length}
+            onClose={() => setShowPOIPanel(false)}
+            onToggleCategory={togglePOICategory}
+            onClearAll={clearAllPOIs}
+          />
+        )}
+
+        {/* Measurement Panel - Responsive */}
+        {isMobile ? (
+          <MobileMeasurementPanel
+            show={measureMode !== "none"}
+            measureMode={measureMode}
+            measurePoints={measurePoints}
+            measureResult={measureResult}
+            onClose={() => toggleMeasureMode(measureMode as "distance" | "area")}
+            onClear={clearMeasurement}
+          />
+        ) : (
+          <MeasurementPanel
+            show={measureMode !== "none"}
+            measureMode={measureMode}
+            measurePoints={measurePoints}
+            measureResult={measureResult}
+            onClose={() => toggleMeasureMode(measureMode as "distance" | "area")}
+            onClear={clearMeasurement}
+          />
+        )}
+
+        {/* Elevation Profile - Responsive */}
+        {showElevationProfile && routeInfo && (
+          isMobile ? (
+            <MobileElevationProfile
+              show={showElevationProfile}
+              routeCoordinates={routeInfo.geometry.coordinates as [number, number][]}
+              onClose={() => setShowElevationProfile(false)}
+              isLoading={isLoadingElevation}
+              elevationData={elevationData}
+            />
+          ) : (
+            <ElevationProfile
+              routeCoordinates={routeInfo.geometry.coordinates as [number, number][]}
+              onClose={() => setShowElevationProfile(false)}
+              isLoading={isLoadingElevation}
+              elevationData={elevationData}
+            />
+          )
+        )}
+
+        {/* Weather Overlay - Responsive */}
+        {showWeatherOverlay && (
+          isMobile ? (
+            <MobileWeatherOverlay
+              show={showWeatherOverlay}
+              weatherData={weatherData}
+              onClose={() => setShowWeatherOverlay(false)}
+              isLoading={isLoadingWeather}
+              selectedIndex={selectedWeatherIndex}
+              onSelectLocation={setSelectedWeatherIndex}
+            />
+          ) : (
+            <WeatherOverlay
+              weatherData={weatherData}
+              onClose={() => setShowWeatherOverlay(false)}
+              isLoading={isLoadingWeather}
+              selectedIndex={selectedWeatherIndex}
+              onSelectLocation={setSelectedWeatherIndex}
+            />
+          )
+        )}
+
+        {/* Location Error Toast */}
+        {locationError && (
+          <div className="absolute top-20 left-1/2 -translate-x-1/2" style={{ zIndex: Z_INDEX.LOCATION_ERROR }}>
+            <div className="bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm">
+              {locationError}
             </div>
           </div>
+        )}
 
-          {/* Map Content */}
-          <div className="relative h-[400px] sm:h-[500px] md:h-[600px]">
-            {/* MapLibre Map */}
-            <div ref={mapContainer} className="absolute inset-0" />
-
-            {/* Search Bar - Responsive */}
-            {isMobile ? (
-              <MobileSearchBar
-                isRoutingMode={isRoutingMode}
-                selectingPoint={selectingPoint}
-                onSelectResult={handleSelectSearchResult}
-              />
-            ) : (
-              <SearchBar
-                isRoutingMode={isRoutingMode}
-                selectingPoint={selectingPoint}
-                onSelectResult={handleSelectSearchResult}
-              />
-            )}
-
-            {/* Routing Panel - Responsive */}
-            {isMobile ? (
-              <MobileRoutingPanel
-                show={isRoutingMode}
-                travelMode={travelMode}
-                startPoint={startPoint}
-                endPoint={endPoint}
-                selectingPoint={selectingPoint}
-                routeInfo={routeInfo}
-                isCalculatingRoute={isCalculatingRoute}
-                voiceEnabled={voiceEnabled}
-                showSteps={showSteps}
-                currentStepIndex={currentStepIndex}
-                isLoadingElevation={isLoadingElevation}
-                showElevationProfile={showElevationProfile}
-                isLoadingWeather={isLoadingWeather}
-                showWeatherOverlay={showWeatherOverlay}
-                alternatives={alternatives}
-                selectedAlternative={selectedAlternative}
-                onClose={handleToggleRouting}
-                onTravelModeChange={setTravelMode}
-                onSetStartPoint={() => setSelectingPoint("start")}
-                onSetEndPoint={() => setSelectingPoint("end")}
-                onClearStartPoint={() => {
-                  setStartPoint(null);
-                  setSelectingPoint("start");
-                }}
-                onClearEndPoint={() => {
-                  setEndPoint(null);
-                  setSelectingPoint("end");
-                }}
-                onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
-                onToggleSteps={() => setShowSteps(!showSteps)}
-                onGoToStep={handleGoToStep}
-                onClearRoute={() => {
-                  clearRoute();
-                  setSelectingPoint("start");
-                }}
-                onToggleElevation={handleToggleElevation}
-                onToggleWeather={handleToggleWeather}
-                onSelectAlternative={handleSelectAlternative}
-                onSaveRoute={handleSaveRoute}
-                onLoadRoute={handleLoadRoute}
-              />
-            ) : (
-              <RoutingPanel
-                show={isRoutingMode}
-                travelMode={travelMode}
-                startPoint={startPoint}
-                endPoint={endPoint}
-                selectingPoint={selectingPoint}
-                routeInfo={routeInfo}
-                isCalculatingRoute={isCalculatingRoute}
-                voiceEnabled={voiceEnabled}
-                showSteps={showSteps}
-                currentStepIndex={currentStepIndex}
-                isLoadingElevation={isLoadingElevation}
-                showElevationProfile={showElevationProfile}
-                isLoadingWeather={isLoadingWeather}
-                showWeatherOverlay={showWeatherOverlay}
-                alternatives={alternatives}
-                selectedAlternative={selectedAlternative}
-                onClose={handleToggleRouting}
-                onTravelModeChange={setTravelMode}
-                onSetStartPoint={() => setSelectingPoint("start")}
-                onSetEndPoint={() => setSelectingPoint("end")}
-                onClearStartPoint={() => {
-                  setStartPoint(null);
-                  setSelectingPoint("start");
-                }}
-                onClearEndPoint={() => {
-                  setEndPoint(null);
-                  setSelectingPoint("end");
-                }}
-                onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
-                onToggleSteps={() => setShowSteps(!showSteps)}
-                onGoToStep={handleGoToStep}
-                onClearRoute={() => {
-                  clearRoute();
-                  setSelectingPoint("start");
-                }}
-                onToggleElevation={handleToggleElevation}
-                onToggleWeather={handleToggleWeather}
-                onSelectAlternative={handleSelectAlternative}
-                onSaveRoute={handleSaveRoute}
-                onLoadRoute={handleLoadRoute}
-              />
-            )}
-
-            {/* Map Controls - Responsive */}
-            {isMobile ? (
-              <MobileMapControls
-                onZoomIn={handleZoomIn}
-                onZoomOut={handleZoomOut}
-                onFullscreen={handleFullscreen}
-                onResetNorth={handleResetNorth}
-                onResetView={handleResetView}
-                onToggleMenu={() => setShowMobileMenu(!showMobileMenu)}
-                showMenu={showMobileMenu}
-              />
-            ) : (
-              <MapControls
-                onZoomIn={handleZoomIn}
-                onZoomOut={handleZoomOut}
-                onFullscreen={handleFullscreen}
-                onResetNorth={handleResetNorth}
-              />
-            )}
-
-            {/* Navigation Controls - Responsive */}
-            {isMobile ? (
-              !isRoutingMode && (
-                <MobileNavigationControls
-                  isRoutingMode={isRoutingMode}
-                  isLocating={isLocating}
-                  showPOIPanel={showPOIPanel}
-                  isLoadingPOIs={isLoadingPOIs}
-                  measureMode={measureMode}
-                  showLayerPanel={showLayerPanel}
-                  showTrafficLayer={showTrafficLayer}
-                  trafficLoading={trafficLoading}
-                  onToggleRouting={handleToggleRouting}
-                  onLocateUser={handleLocateUser}
-                  onTogglePOI={() => setShowPOIPanel(!showPOIPanel)}
-                  onToggleMeasure={toggleMeasureMode}
-                  onToggleLayerPanel={() => setShowLayerPanel(!showLayerPanel)}
-                  onToggleTraffic={handleToggleTraffic}
-                />
-              )
-            ) : (
-              <NavigationControls
-                isRoutingMode={isRoutingMode}
-                isTracking={isTracking}
-                isFollowMode={isFollowMode}
-                isLocating={isLocating}
-                showTrafficLayer={showTrafficLayer}
-                trafficLoading={trafficLoading}
-                showPOIPanel={showPOIPanel}
-                isLoadingPOIs={isLoadingPOIs}
-                measureMode={measureMode}
-                showLayerPanel={showLayerPanel}
-                onToggleRouting={handleToggleRouting}
-                onToggleTracking={() => setIsTracking(!isTracking)}
-                onToggleFollowMode={() => setIsFollowMode(!isFollowMode)}
-                onLocateUser={handleLocateUser}
-                onResetView={handleResetView}
-                onToggleTraffic={handleToggleTraffic}
-                onTogglePOI={() => setShowPOIPanel(!showPOIPanel)}
-                onToggleMeasure={toggleMeasureMode}
-                onToggleLayerPanel={() => setShowLayerPanel(!showLayerPanel)}
-              />
-            )}
-
-            {/* Mobile Floating Action Button for Routing Mode */}
-            {isMobile && isRoutingMode && (
-              <div className="absolute top-1/2 right-4 flex flex-col gap-2" style={{ zIndex: Z_INDEX.FLOATING_BUTTONS }}>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleLocateUser}
-                  disabled={isLocating}
-                  className="w-12 h-12 bg-white/95 backdrop-blur-sm rounded-full shadow-lg border border-gray-200 flex items-center justify-center text-gray-700 hover:text-primary transition-colors disabled:opacity-50"
-                  aria-label="Find my location"
-                >
-                  {isLocating ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Crosshair className="w-5 h-5" />
-                  )}
-                </motion.button>
-              </div>
-            )}
-
-            {/* Layer Panel - Responsive */}
-            {isMobile ? (
-              <MobileLayerPanel
-                show={showLayerPanel}
-                activeStyle={activeStyle}
-                onClose={() => setShowLayerPanel(false)}
-                onStyleChange={handleStyleChange}
-              />
-            ) : (
-              <LayerPanel
-                show={showLayerPanel}
-                activeStyle={activeStyle}
-                onClose={() => setShowLayerPanel(false)}
-                onStyleChange={handleStyleChange}
-              />
-            )}
-
-            {/* POI Panel - Responsive */}
-            {isMobile ? (
-              <MobilePOIPanel
-                show={showPOIPanel}
-                activePOICategories={activePOICategories}
-                poisCount={pois.length}
-                onClose={() => setShowPOIPanel(false)}
-                onToggleCategory={togglePOICategory}
-                onClearAll={clearAllPOIs}
-              />
-            ) : (
-              <POIPanel
-                show={showPOIPanel}
-                activePOICategories={activePOICategories}
-                poisCount={pois.length}
-                onClose={() => setShowPOIPanel(false)}
-                onToggleCategory={togglePOICategory}
-                onClearAll={clearAllPOIs}
-              />
-            )}
-
-            {/* Measurement Panel - Responsive */}
-            {isMobile ? (
-              <MobileMeasurementPanel
-                show={measureMode !== "none"}
-                measureMode={measureMode}
-                measurePoints={measurePoints}
-                measureResult={measureResult}
-                onClose={() => toggleMeasureMode(measureMode as "distance" | "area")}
-                onClear={clearMeasurement}
-              />
-            ) : (
-              <MeasurementPanel
-                show={measureMode !== "none"}
-                measureMode={measureMode}
-                measurePoints={measurePoints}
-                measureResult={measureResult}
-                onClose={() => toggleMeasureMode(measureMode as "distance" | "area")}
-                onClear={clearMeasurement}
-              />
-            )}
-
-            {/* Elevation Profile - Responsive */}
-            {showElevationProfile && routeInfo && (
-              isMobile ? (
-                <MobileElevationProfile
-                  show={showElevationProfile}
-                  routeCoordinates={routeInfo.geometry.coordinates as [number, number][]}
-                  onClose={() => setShowElevationProfile(false)}
-                  isLoading={isLoadingElevation}
-                  elevationData={elevationData}
-                />
-              ) : (
-                <ElevationProfile
-                  routeCoordinates={routeInfo.geometry.coordinates as [number, number][]}
-                  onClose={() => setShowElevationProfile(false)}
-                  isLoading={isLoadingElevation}
-                  elevationData={elevationData}
-                />
-              )
-            )}
-
-            {/* Weather Overlay - Responsive */}
-            {showWeatherOverlay && (
-              isMobile ? (
-                <MobileWeatherOverlay
-                  show={showWeatherOverlay}
-                  weatherData={weatherData}
-                  onClose={() => setShowWeatherOverlay(false)}
-                  isLoading={isLoadingWeather}
-                  selectedIndex={selectedWeatherIndex}
-                  onSelectLocation={setSelectedWeatherIndex}
-                />
-              ) : (
-                <WeatherOverlay
-                  weatherData={weatherData}
-                  onClose={() => setShowWeatherOverlay(false)}
-                  isLoading={isLoadingWeather}
-                  selectedIndex={selectedWeatherIndex}
-                  onSelectLocation={setSelectedWeatherIndex}
-                />
-              )
-            )}
-
-            {/* Debug Info - Remove in production */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="fixed top-4 right-4 bg-black/80 text-white p-2 rounded text-xs" style={{ zIndex: Z_INDEX.DEBUG_INFO }}>
-                <div>Mobile: {isMobile ? 'Yes' : 'No'}</div>
-                <div>Elevation: {showElevationProfile ? 'Show' : 'Hide'}</div>
-                <div>Weather: {showWeatherOverlay ? 'Show' : 'Hide'}</div>
-                <div>Route: {routeInfo ? 'Yes' : 'No'}</div>
-              </div>
-            )}
-
-            {/* Location Error Toast */}
-            {locationError && (
-              <div className="absolute top-20 left-1/2 -translate-x-1/2" style={{ zIndex: Z_INDEX.LOCATION_ERROR }}>
-                <div className="bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm">
-                  {locationError}
-                </div>
-              </div>
-            )}
-
-            {/* Coordinates Display - Responsive */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2" style={{ zIndex: Z_INDEX.COORDINATES }}>
-              <div className="bg-white/95 backdrop-blur-sm rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 shadow-lg border border-gray-200">
-                <span className="text-[10px] sm:text-xs text-gray-600 font-mono">
-                  {coordinates.lat.toFixed(4)}° N, {coordinates.lng.toFixed(4)}° E
-                </span>
-              </div>
-            </div>
+        {/* Coordinates Display - Responsive */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2" style={{ zIndex: Z_INDEX.COORDINATES }}>
+          <div className="bg-white/95 backdrop-blur-sm rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 shadow-lg border border-gray-200">
+            <span className="text-[10px] sm:text-xs text-gray-600 font-mono">
+              {coordinates.lat.toFixed(4)}° N, {coordinates.lng.toFixed(4)}° E
+            </span>
           </div>
-
-          {/* Map Footer */}
-          <div className="px-4 py-2 bg-muted/50 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-            <span>© OpenStreetMap contributors | CARTO Basemaps | OSRM Routing</span>
-            <span>Powered by MapLibre GL JS</span>
-          </div>
-        </motion.div>
-
-        {/* Instructions - Responsive */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
-          className="mt-8 text-center"
-        >
-          <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 rounded-xl bg-card border border-border">
-            <div className="flex items-center gap-1 sm:gap-2">
-              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                <strong className="text-foreground">Search</strong>
-              </span>
-            </div>
-            <span className="text-muted-foreground hidden sm:inline">•</span>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <Route className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                <strong className="text-foreground">Route</strong>
-              </span>
-            </div>
-            <span className="text-muted-foreground hidden sm:inline">•</span>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                <strong className="text-foreground">Elevation</strong>
-              </span>
-            </div>
-            <span className="text-muted-foreground hidden sm:inline">•</span>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <CloudSun className="w-4 h-4 sm:w-5 sm:h-5 text-sky-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                <strong className="text-foreground">Weather</strong>
-              </span>
-            </div>
-            <span className="text-muted-foreground hidden sm:inline">•</span>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500" />
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                <strong className="text-foreground">POIs</strong>
-              </span>
-            </div>
-          </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Custom styles */}
@@ -1175,8 +1078,8 @@ const MapViewer = () => {
           }
         }
       `}</style>
-    </section>
+    </div>
   );
 };
 
-export default MapViewer;
+export default FullScreenMapViewer;

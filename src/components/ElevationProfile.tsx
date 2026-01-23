@@ -103,16 +103,18 @@ const ElevationProfile = ({
     >
       <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-green-600">
           <div className="flex items-center gap-2">
-            <Mountain className="w-5 h-5 text-emerald-500" />
-            <span className="font-semibold text-gray-700">Elevation Profile</span>
+            <Mountain className="w-5 h-5 text-white" />
+            <span className="font-semibold text-white">Elevation Profile</span>
           </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-white/20 rounded-lg transition-colors group"
+            title="Close"
+            aria-label="Close weather overlay"
           >
-            <X className="w-4 h-4 text-gray-400" />
+            <X className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
           </button>
         </div>
 

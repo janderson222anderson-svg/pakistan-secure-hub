@@ -34,9 +34,11 @@ const LayerPanel = ({ show, activeStyle, onClose, onStyleChange }: LayerPanelPro
               </div>
               <button
                 onClick={onClose}
-                className="p-1 hover:bg-gray-100 rounded"
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors group"
+                title="Close"
+                aria-label="Close layer panel"
               >
-                <X className="w-4 h-4 text-gray-400" />
+                <X className="w-4 h-4 text-gray-400 group-hover:text-gray-600 group-hover:scale-110 transition-all" />
               </button>
             </div>
             

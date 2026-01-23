@@ -136,19 +136,21 @@ const RoutingPanel = ({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -300, opacity: 0 }}
           transition={{ type: "spring", damping: 25 }}
-          className="absolute left-4 top-4 w-72 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 overflow-hidden z-20"
+          className="absolute left-4 top-4 w-72 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 z-20 max-h-[calc(100vh-8rem)] overflow-y-auto"
         >
           {/* Panel Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-primary text-white">
+          <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-primary text-white rounded-t-xl">
             <div className="flex items-center gap-2">
               <Route className="w-5 h-5" />
               <span className="font-semibold">Route Planner</span>
             </div>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-white/20 rounded transition-colors"
+              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors group"
+              title="Close"
+              aria-label="Close routing panel"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
             </button>
           </div>
 
@@ -342,8 +344,8 @@ const RoutingPanel = ({
                           disabled={isLoadingWeather}
                           className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
                             showWeatherOverlay 
-                              ? "bg-sky-500 text-white" 
-                              : "bg-sky-50 text-sky-700 hover:bg-sky-100"
+                              ? "bg-emerald-500 text-white" 
+                              : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                           }`}
                         >
                           {isLoadingWeather ? <Loader2 className="w-4 h-4 animate-spin" /> : <CloudSun className="w-4 h-4" />}
@@ -416,7 +418,7 @@ const RoutingPanel = ({
 
           {/* Clear Button */}
           {(startPoint || endPoint) && (
-            <div className="p-3 border-t border-gray-100">
+            <div className="sticky bottom-0 z-10 p-3 border-t border-gray-100 bg-white/95 backdrop-blur-sm">
               <div className="flex gap-2">
                 <button
                   onClick={onClearRoute}
