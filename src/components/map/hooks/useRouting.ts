@@ -6,9 +6,10 @@ import { useRouteAlternatives } from "./useRouteAlternatives";
 interface UseRoutingProps {
   map: maplibregl.Map | null;
   travelMode: TravelMode;
+  onRouteCalculated?: (routeInfo: RouteInfo) => void;
 }
 
-export const useRouting = ({ map, travelMode }: UseRoutingProps) => {
+export const useRouting = ({ map, travelMode, onRouteCalculated }: UseRoutingProps) => {
   const [startPoint, setStartPoint] = useState<RoutePoint | null>(null);
   const [endPoint, setEndPoint] = useState<RoutePoint | null>(null);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
@@ -87,6 +88,11 @@ export const useRouting = ({ map, travelMode }: UseRoutingProps) => {
       if (route) {
         setRouteInfo(route);
         drawRoute(route.geometry);
+        
+        // Call voice callback if provided
+        if (onRouteCalculated) {
+          onRouteCalculated(route);
+        }
 
         // Fit map to route
         const coordinates = route.geometry.coordinates as [number, number][];

@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { motion } from "framer-motion";
 import { Crosshair, Search, Route, TrendingUp, CloudSun, MapPin, Loader2 } from "lucide-react";
 import { toast, Toaster } from "sonner";
+import { voiceNavigator } from "@/lib/voice-navigation";
 
 // Import components
 import MapControls from "./map/MapControls";
@@ -69,6 +70,24 @@ const MapViewer = () => {
   const [showSteps, setShowSteps] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
+  // Voice navigation handler
+  const handleToggleVoice = () => {
+    const newVoiceState = !voiceEnabled;
+    setVoiceEnabled(newVoiceState);
+    voiceNavigator.setEnabled(newVoiceState);
+    if (newVoiceState) {
+      voiceNavigator.speak("Voice navigation enabled");
+    }
+  };
+
+  // Voice route announcement
+  const handleRouteCalculated = (routeInfo: any) => {
+    if (voiceEnabled && endPoint) {
+      const destination = endPoint.name || "your destination";
+      voiceNavigator.announceRouteStart(destination);
+    }
+  };
+
   // Elevation & Weather state
   const [showElevationProfile, setShowElevationProfile] = useState(false);
   const [elevationData, setElevationData] = useState<any[]>([]);
@@ -104,7 +123,7 @@ const MapViewer = () => {
     setSelectingPoint,
     clearRoute,
     handleSelectAlternative,
-  } = useRouting({ map, travelMode });
+  } = useRouting({ map, travelMode, onRouteCalculated: handleRouteCalculated });
 
   // POI hook
   const {
