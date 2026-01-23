@@ -13,6 +13,7 @@ import { formatDistance, formatDuration } from "./utils";
 import LoadingSkeleton from "./LoadingSkeleton";
 import RouteAlternatives from "./RouteAlternatives";
 import SavedRoutes from "./SavedRoutes";
+import { voiceNavigator } from "@/lib/voice-navigation";
 
 interface RouteAlternative extends RouteInfo {
   type: "fastest" | "shortest" | "balanced";
@@ -125,6 +126,32 @@ const RoutingPanel = ({
   onLoadRoute,
 }: RoutingPanelProps) => {
   const [showSavedRoutes, setShowSavedRoutes] = useState(false);
+
+  // Voice-enabled step navigation
+  const handleGoToStep = (index: number, step: NavigationStep) => {
+    onGoToStep(index, step);
+    
+    // Announce the step if voice is enabled
+    if (voiceEnabled) {
+      const distance = step.distance ? `${Math.round(step.distance)}m` : undefined;
+      voiceNavigator.announceStep(index, step.maneuver.instruction, distance);
+    }
+  };
+
+  // Keyboard navigation for steps
+  const handleKeyNavigation = (event: React.KeyboardEvent) => {
+    if (!routeInfo?.steps || !showSteps) return;
+    
+    if (event.key === 'ArrowUp' && currentStepIndex > 0) {
+      event.preventDefault();
+      const prevStep = routeInfo.steps[currentStepIndex - 1];
+      handleGoToStep(currentStepIndex - 1, prevStep);
+    } else if (event.key === 'ArrowDown' && currentStepIndex < routeInfo.steps.length - 1) {
+      event.preventDefault();
+      const nextStep = routeInfo.steps[currentStepIndex + 1];
+      handleGoToStep(currentStepIndex + 1, nextStep);
+    }
+  };
 
   // Debug log
   console.log('RoutingPanel - alternatives:', alternatives.length, alternatives);
@@ -373,6 +400,8 @@ const RoutingPanel = ({
                           animate={{ height: "auto", opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
                           className="max-h-64 overflow-y-auto border-t border-gray-100"
+                          onKeyDown={handleKeyNavigation}
+                          tabIndex={0}
                         >
                           {routeInfo.steps.map((step, index) => {
                             const StepIcon = getManeuverIcon(step.maneuver.type, step.maneuver.modifier);
@@ -381,7 +410,7 @@ const RoutingPanel = ({
                             return (
                               <button
                                 key={index}
-                                onClick={() => onGoToStep(index, step)}
+                                onClick={() => handleGoToStep(index, step)}
                                 className={`w-full flex items-start gap-3 p-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
                                   isActive ? "bg-blue-50" : ""
                                 }`}

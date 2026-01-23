@@ -3,6 +3,7 @@ export class VoiceNavigator {
   private synthesis: SpeechSynthesis | null = null;
   private voice: SpeechSynthesisVoice | null = null;
   private isEnabled: boolean = true;
+  private currentStepIndex: number = -1;
 
   constructor() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -65,16 +66,73 @@ export class VoiceNavigator {
     this.speak(announcement, 'high');
   }
 
+  announceStep(stepIndex: number, instruction: string, distance?: string) {
+    if (!this.isEnabled) return;
+    
+    // Only announce if this is a new step
+    if (stepIndex !== this.currentStepIndex) {
+      this.currentStepIndex = stepIndex;
+      
+      let announcement = this.cleanInstruction(instruction);
+      if (distance && distance !== '0 min') {
+        announcement = `${announcement}. Distance: ${distance}`;
+      }
+      
+      this.speak(announcement, 'high');
+    }
+  }
+
+  announceCurrentStep(instruction: string, distance?: string) {
+    let announcement = `Current step: ${this.cleanInstruction(instruction)}`;
+    if (distance && distance !== '0 min') {
+      announcement += `. Distance: ${distance}`;
+    }
+    this.speak(announcement, 'high');
+  }
+
+  announceNextStep(instruction: string, distance?: string) {
+    let announcement = `Next: ${this.cleanInstruction(instruction)}`;
+    if (distance && distance !== '0 min') {
+      announcement += `. Distance: ${distance}`;
+    }
+    this.speak(announcement, 'normal');
+  }
+
+  private cleanInstruction(instruction: string): string {
+    // Clean up common instruction patterns for better speech
+    return instruction
+      .replace(/Continue onto/gi, 'Continue on')
+      .replace(/Turn left onto/gi, 'Turn left on')
+      .replace(/Turn right onto/gi, 'Turn right on')
+      .replace(/Enter the roundabout/gi, 'Enter roundabout')
+      .replace(/Exit the roundabout/gi, 'Exit roundabout')
+      .replace(/Keep left/gi, 'Keep left')
+      .replace(/Keep right/gi, 'Keep right')
+      .replace(/Make a U-turn/gi, 'Make U-turn')
+      .replace(/Head/gi, 'Go')
+      .trim();
+  }
+
   announceRouteStart(destination: string) {
+    this.currentStepIndex = -1; // Reset step tracking
     this.speak(`Starting navigation to ${destination}`, 'high');
   }
 
   announceRouteComplete() {
+    this.currentStepIndex = -1; // Reset step tracking
     this.speak('You have arrived at your destination', 'high');
   }
 
   announceRecalculating() {
     this.speak('Recalculating route', 'normal');
+  }
+
+  announceStepNavigation(currentIndex: number, totalSteps: number) {
+    this.speak(`Step ${currentIndex + 1} of ${totalSteps}`, 'normal');
+  }
+
+  resetStepTracking() {
+    this.currentStepIndex = -1;
   }
 
   stop() {

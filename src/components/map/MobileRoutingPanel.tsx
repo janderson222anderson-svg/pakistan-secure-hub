@@ -13,6 +13,7 @@ import { formatDistance, formatDuration } from "./utils";
 import LoadingSkeleton from "./LoadingSkeleton";
 import RouteAlternatives from "./RouteAlternatives";
 import SavedRoutes from "./SavedRoutes";
+import { voiceNavigator } from "@/lib/voice-navigation";
 import { Z_INDEX } from "../../lib/z-index";
 
 interface RouteAlternative extends RouteInfo {
@@ -127,6 +128,32 @@ const MobileRoutingPanel = ({
 }: MobileRoutingPanelProps) => {
   const [showSavedRoutes, setShowSavedRoutes] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+
+  // Voice-enabled step navigation
+  const handleGoToStep = (index: number, step: NavigationStep) => {
+    onGoToStep(index, step);
+    
+    // Announce the step if voice is enabled
+    if (voiceEnabled) {
+      const distance = step.distance ? `${Math.round(step.distance)}m` : undefined;
+      voiceNavigator.announceStep(index, step.maneuver.instruction, distance);
+    }
+  };
+
+  // Keyboard navigation for steps
+  const handleKeyNavigation = (event: React.KeyboardEvent) => {
+    if (!routeInfo?.steps || !showSteps) return;
+    
+    if (event.key === 'ArrowUp' && currentStepIndex > 0) {
+      event.preventDefault();
+      const prevStep = routeInfo.steps[currentStepIndex - 1];
+      handleGoToStep(currentStepIndex - 1, prevStep);
+    } else if (event.key === 'ArrowDown' && currentStepIndex < routeInfo.steps.length - 1) {
+      event.preventDefault();
+      const nextStep = routeInfo.steps[currentStepIndex + 1];
+      handleGoToStep(currentStepIndex + 1, nextStep);
+    }
+  };
   const [panelHeight, setPanelHeight] = useState<'compact' | 'half' | 'full'>('half');
 
   const getPanelAnimation = () => {
@@ -446,6 +473,8 @@ const MobileRoutingPanel = ({
                                 animate={{ height: "auto", opacity: 1 }}
                                 exit={{ height: 0, opacity: 0 }}
                                 className={`${getStepsMaxHeight()} overflow-y-auto border-t border-gray-100`}
+                                onKeyDown={handleKeyNavigation}
+                                tabIndex={0}
                               >
                                 <div className="sticky top-0 bg-gray-50 px-3 py-2 border-b border-gray-200">
                                   <div className="flex items-center justify-between">
@@ -467,7 +496,7 @@ const MobileRoutingPanel = ({
                                   return (
                                     <button
                                       key={index}
-                                      onClick={() => onGoToStep(index, step)}
+                                      onClick={() => handleGoToStep(index, step)}
                                       className={`w-full flex items-start gap-3 p-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
                                         isActive ? "bg-blue-50" : ""
                                       }`}

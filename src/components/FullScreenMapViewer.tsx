@@ -77,6 +77,16 @@ const FullScreenMapViewer = ({ showDocsButton = false, onDocsClick }: { showDocs
     voiceNavigator.setEnabled(newVoiceState);
     if (newVoiceState) {
       voiceNavigator.speak("Voice navigation enabled");
+      
+      // If there's a route with steps, announce current step
+      if (routeInfo?.steps && routeInfo.steps.length > 0 && currentStepIndex >= 0) {
+        const currentStep = routeInfo.steps[currentStepIndex];
+        if (currentStep) {
+          setTimeout(() => {
+            voiceNavigator.announceCurrentStep(currentStep.maneuver.instruction);
+          }, 1500); // Wait for "enabled" announcement to finish
+        }
+      }
     }
   };
 
